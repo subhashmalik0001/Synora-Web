@@ -1,0 +1,40 @@
+{
+  "name": "paygate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fluxar – Monetize your communities with paid access",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "db:generate": "pnpm --filter @paygate/db generate",
+    "db:migrate": "pnpm --filter @paygate/db migrate",
+    "db:push": "pnpm --filter @paygate/db push",
+    "db:studio": "pnpm --filter @paygate/db studio",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^7.2.0",
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "^0.45.1"
+    }
+  }
+}

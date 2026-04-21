@@ -1,0 +1,18 @@
+{
+    "name": "@paygate/eslint-config",
+    "version": "0.0.0",
+    "private": true,
+    "license": "MIT",
+    "files": [
+        "base.js",
+        "next.js",
+        "node.js"
+    ],
+    "devDependencies": {
+        "eslint": "^8.57.0",
+        "@eslint/js": "^8.57.0",
+        "typescript-eslint": "^8.0.0",
+        "eslint-config-next": "^14.0.0",
+        "eslint-plugin-import": "^2.29.0"
+    }
+}

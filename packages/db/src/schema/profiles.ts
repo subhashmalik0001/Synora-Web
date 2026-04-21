@@ -1,8 +1,8 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, boolean } from "drizzle-orm/pg-core";
 import { users } from "./users.js";
 
 export const profiles = pgTable('profiles', {
-  id: text('id').primaryKey().references(() => users.id),
+  id: uuid('id').primaryKey().references(() => users.id),
   role: text('role').notNull().default('patient'), // 'patient' | 'doctor' | 'admin'
   fullName: text('full_name'),
   email: text('email'),

@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
 import { users } from "./users.js";
 
 export const healthSummaries = pgTable('health_summaries', {

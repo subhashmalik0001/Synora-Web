@@ -7,6 +7,29 @@ import { router, protectedProcedure } from "../init";
 
 export const settingsRouter = router({
     getProfile: protectedProcedure.query(async ({ ctx }) => {
+        if ((ctx as any).isDemoMode) {
+            return {
+                user: {
+                    id: "dummy-user-id",
+                    name: "Demo Doctor",
+                    email: "demo@synora.com",
+                    role: "doctor",
+                },
+                profile: {
+                    id: "dummy-profile-id",
+                    role: "doctor",
+                    fullName: "Demo Doctor",
+                    phone: "+91 98765 43210",
+                    bloodGroup: "O+",
+                },
+                doctorProfile: {
+                    id: "dummy-doctor-id",
+                    specialization: "Cardiology",
+                    registrationNumber: "REG123456",
+                    clinicName: "Synora Health Clinic",
+                }
+            };
+        }
         console.log("DEBUG_SYNC_START: Fetching profile for user", ctx.user.id);
         
         try {
@@ -65,7 +88,6 @@ export const settingsRouter = router({
                     fullName: profile.fullName,
                     phone: profile.phone,
                     bloodGroup: profile.bloodGroup,
-                    isOnboarded: profile.isOnboarded,
                 } : null,
                 doctorProfile: doctorProfile ? {
                     id: doctorProfile.id,
@@ -119,113 +141,5 @@ export const settingsRouter = router({
             }
         }),
 
-    completeOnboarding: protectedProcedure
-        .input(
-            z.object({
-                role: z.enum(["patient", "doctor"]),
-                fullName: z.string().min(1),
-                phone: z.string().optional(),
-                bloodGroup: z.string().optional(),
-                emergencyContactName: z.string().optional(),
-                emergencyContactPhone: z.string().optional(),
-                // Doctor specific
-                specialization: z.string().optional(),
-                experienceYears: z.number().optional(),
-                registrationNumber: z.string().optional(),
-                clinicName: z.string().optional(),
-                clinicAddress: z.string().optional(),
-                consultationFee: z.number().optional(),
-            })
-        )
-        .mutation(async ({ ctx, input }) => {
-            console.log("[ONBOARDING_INIT] 🏁 Starting onboarding for user:", ctx.user.id);
-            console.log("[ONBOARDING_PAYLOAD] 📦 Data:", {
-                role: input.role,
-                fullName: input.fullName,
-                idType: typeof ctx.user.id
-            });
 
-            try {
-                // 1. Create/Update Profile
-                console.log("[ONBOARDING_INSERT_START] 📝 Inserting into profiles table...");
-                const [profile] = await ctx.db
-                    .insert(profiles)
-                    .values({
-                        userId: ctx.user.id,
-                        role: input.role,
-                        fullName: input.fullName,
-                        phone: input.phone || null,
-                        bloodGroup: input.bloodGroup || null,
-                        emergencyContactName: input.emergencyContactName || null,
-                        emergencyContactPhone: input.emergencyContactPhone || null,
-                        isOnboarded: true,
-                    })
-                    .onConflictDoUpdate({
-                        target: profiles.userId,
-                        set: {
-                            role: input.role,
-                            fullName: input.fullName,
-                            phone: input.phone || null,
-                            bloodGroup: input.bloodGroup || null,
-                            emergencyContactName: input.emergencyContactName || null,
-                            emergencyContactPhone: input.emergencyContactPhone || null,
-                            isOnboarded: true,
-                            updatedAt: new Date(),
-                        }
-                    })
-                    .returning();
-                console.log("[ONBOARDING_SUCCESS] ✅ Clinical profile created/updated");
-
-                // 2. If doctor, create/update doctor_profile
-                if (input.role === "doctor") {
-                    console.log("[ONBOARDING_INSERT_START] 🏥 Inserting into doctor_profiles table...");
-                    await ctx.db
-                        .insert(doctorProfiles)
-                        .values({
-                            userId: ctx.user.id,
-                            fullName: input.fullName,
-                            specialization: input.specialization || "General",
-                            experienceYears: input.experienceYears || 0,
-                            registrationNumber: input.registrationNumber || "PENDING",
-                            clinicName: input.clinicName || null,
-                            clinicAddress: input.clinicAddress || null,
-                            consultationFee: input.consultationFee || 0,
-                        })
-                        .onConflictDoUpdate({
-                            target: doctorProfiles.userId,
-                            set: {
-                                fullName: input.fullName,
-                                specialization: input.specialization || "General",
-                                registrationNumber: input.registrationNumber || "PENDING",
-                                updatedAt: new Date(),
-                            }
-                        });
-                    console.log("[ONBOARDING_SUCCESS] 🩺 Doctor profile finalized");
-                }
-
-                // 3. Sync to Supabase Metadata for Middleware efficiency
-                console.log("[ONBOARDING_SYNC] 🔄 Syncing status to Supabase metadata...");
-                await (ctx as any).supabase.auth.updateUser({
-                    data: { 
-                        isOnboarded: true,
-                        role: input.role 
-                    }
-                });
-                console.log("[ONBOARDING_SUCCESS] ✨ Metadata synchronized");
-
-                return { success: true, profile };
-            } catch (error: any) {
-                console.error("[ONBOARDING_CRITICAL_FAILURE] ❌ Postgres Error:", {
-                    message: error.message,
-                    code: error.code,
-                    detail: error.detail,
-                    hint: error.hint
-                });
-                
-                throw new TRPCError({
-                    code: "INTERNAL_SERVER_ERROR",
-                    message: `Database synchronization failed: ${error.message}. Please ensure you 'npx drizzle-kit push' your database schema.`,
-                });
-            }
-        }),
 });

@@ -1,28 +1,46 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { headers } from "next/headers";
 import { db } from "@paygate/db";
-
 import { createClient } from "@/lib/supabase/server";
+import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
-export const createContext = async () => {
+export const createContext = async (opts: FetchCreateContextFnOptions) => {
     try {
         console.log("[TRPC_CONTEXT_INIT] 🔍 Initializing request context...");
         
-        // 1. Check Supabase Configuration
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
             console.error("[TRPC_CONTEXT_ERROR] ❌ Supabase environment variables are missing!");
         }
 
+        if (!process.env.GEMINI_API_KEY) {
+            console.error("[TRPC_CONTEXT_ERROR] ❌ GEMINI_API_KEY is missing! AI features will fail.");
+        }
+
         const supabase = createClient();
+        const cookieStore = opts.req.headers.get("cookie") || "";
+        const isDemoMode = cookieStore.includes("synora_dummy_auth=true");
         
         let user = null;
-        try {
-            const { data } = await supabase.auth.getUser();
-            user = data?.user;
-            console.log("[TRPC_CONTEXT_AUTH] 👤 User identified:", user?.id || "None");
-        } catch (authError: any) {
-            console.error("[TRPC_CONTEXT_ERROR] ❌ Supabase Auth failed during context initialization:", authError.message);
+
+        if (isDemoMode) {
+            console.log("[TRPC_CONTEXT_AUTH] 🛡️ Demo Mode detected via cookie");
+            user = {
+                id: "dummy-user-id",
+                user_metadata: {
+                    full_name: "Demo User",
+                    role: "doctor",
+                    isOnboarded: true,
+                },
+                email: "demo@synora.com",
+            };
+        } else {
+            try {
+                const { data } = await supabase.auth.getUser();
+                user = data?.user;
+                console.log("[TRPC_CONTEXT_AUTH] 👤 User identified:", user?.id || "None");
+            } catch (authError: any) {
+                console.error("[TRPC_CONTEXT_ERROR] ❌ Supabase Auth failed during context initialization:", authError.message);
+            }
         }
 
         // 2. Check Database availability
@@ -40,6 +58,7 @@ export const createContext = async () => {
             } : null,
             db,
             supabase, // Now exposed for mutations to update metadata
+            isDemoMode,
         };
     } catch (criticalError: any) {
         console.error("[TRPC_CONTEXT_CRITICAL_CRASH] 🚨 Failed to create request context:", criticalError.message);

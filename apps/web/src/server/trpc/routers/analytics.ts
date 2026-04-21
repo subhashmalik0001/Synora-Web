@@ -6,92 +6,113 @@ import { router, protectedProcedure } from "../init";
 
 export const analyticsRouter = router({
     getDashboardMetrics: protectedProcedure.query(async ({ ctx }) => {
-        // 1. Get creator profile for current user
-        const creator = await ctx.db.query.creators.findFirst({
-            where: eq(creators.userId, ctx.user.id),
-        });
-
-        if (!creator) {
-            throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Creator profile not found",
-            });
+        if ((ctx as any).isDemoMode) {
+            return {
+                mrr: 1250000,
+                activeMembers: 150,
+                newThisMonth: 12,
+                churnRate: 2.5,
+                totalRevenue: 5400000,
+            };
         }
+        try {
+            // 1. Get creator profile for current user
+            const creator = await ctx.db.query.creators.findFirst({
+                where: eq(creators.userId, ctx.user.id),
+            });
 
-        // 2. Calculate Revenue & Velocity from Payments
-        const paymentsData = await ctx.db
-            .select({
-                amount: payments.amount,
-                status: payments.status,
-                paidAt: payments.paidAt,
-            })
-            .from(payments)
-            .innerJoin(memberships, eq(payments.subscriptionId, memberships.id))
-            .innerJoin(products, eq(memberships.productId, products.id))
-            .where(eq(products.creatorId, creator.id));
+            if (!creator) {
+                return { mrr: 0, activeMembers: 0, newThisMonth: 0, churnRate: 0, totalRevenue: 0 };
+            }
 
-        const totalRevenue = paymentsData
-            .filter(p => p.status === 'captured')
-            .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+            // 2. Calculate Revenue & Velocity from Payments
+            const paymentsData = await ctx.db
+                .select({
+                    amount: payments.amount,
+                    status: payments.status,
+                    paidAt: payments.paidAt,
+                })
+                .from(payments)
+                .innerJoin(memberships, eq(payments.subscriptionId, memberships.id))
+                .innerJoin(products, eq(memberships.productId, products.id))
+                .where(eq(products.creatorId, creator.id));
 
-        // 3. Calculate MRR based on active memberships and their product pricing
-        const activeMemberships = await ctx.db.query.memberships.findMany({
-            where: and(
-                eq(memberships.status, "active"),
-                inArray(memberships.productId, (await ctx.db.query.products.findMany({
-                    where: eq(products.creatorId, creator.id),
-                    columns: { id: true }
-                })).map(p => p.id))
-            ),
-            with: { product: true }
-        });
+            const totalRevenue = paymentsData
+                .filter(p => p.status === 'captured')
+                .reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
-        const mrr = activeMemberships.reduce((acc, m) => {
-            const price = m.product?.pricePaise || 0;
-            const interval = m.product?.billingInterval || 'monthly';
-            if (interval === 'monthly') return acc + price;
-            if (interval === 'quarterly') return acc + (price / 3);
-            if (interval === 'yearly') return acc + (price / 12);
-            return acc;
-        }, 0);
+            // 3. Calculate MRR based on active memberships and their product pricing
+            const activeMemberships = await ctx.db.query.memberships.findMany({
+                where: and(
+                    eq(memberships.status, "active"),
+                    inArray(memberships.productId, (await ctx.db.query.products.findMany({
+                        where: eq(products.creatorId, creator.id),
+                        columns: { id: true }
+                    })).map(p => p.id))
+                ),
+                with: { product: true }
+            });
 
-        const activeMembers = activeMemberships.length;
+            const mrr = activeMemberships.reduce((acc, m) => {
+                const price = m.product?.pricePaise || 0;
+                const interval = m.product?.billingInterval || 'monthly';
+                if (interval === 'monthly') return acc + price;
+                if (interval === 'quarterly') return acc + (price / 3);
+                if (interval === 'yearly') return acc + (price / 12);
+                return acc;
+            }, 0);
 
-        // 4. New This Month
-        const startOfMonth = new Date();
-        startOfMonth.setUTCDate(1);
-        startOfMonth.setUTCHours(0, 0, 0, 0);
+            const activeMembers = activeMemberships.length;
 
-        const newThisMonth = activeMemberships.filter(m => m.createdAt >= startOfMonth).length;
+            // 4. New This Month
+            const startOfMonth = new Date();
+            startOfMonth.setUTCDate(1);
+            startOfMonth.setUTCHours(0, 0, 0, 0);
 
-        // 5. Churn Calculation
-        const cancelledThisMonth = await ctx.db
-            .select({ count: count(memberships.id) })
-            .from(memberships)
-            .innerJoin(products, eq(memberships.productId, products.id))
-            .where(
-                and(
-                    eq(products.creatorId, creator.id),
-                    eq(memberships.status, "cancelled"),
-                    gte(memberships.cancelledAt, startOfMonth)
-                )
-            );
+            const newThisMonth = activeMemberships.filter(m => m.createdAt >= startOfMonth).length;
 
-        const churnCount = cancelledThisMonth[0]?.count || 0;
-        const churnRate = (activeMembers + churnCount) > 0
-            ? (churnCount / (activeMembers + churnCount)) * 100
-            : 0;
+            // 5. Churn Calculation
+            const cancelledThisMonth = await ctx.db
+                .select({ count: count(memberships.id) })
+                .from(memberships)
+                .innerJoin(products, eq(memberships.productId, products.id))
+                .where(
+                    and(
+                        eq(products.creatorId, creator.id),
+                        eq(memberships.status, "cancelled"),
+                        gte(memberships.cancelledAt, startOfMonth)
+                    )
+                );
 
-        return {
-            mrr,
-            activeMembers,
-            newThisMonth,
-            churnRate: Number(churnRate.toFixed(2)),
-            totalRevenue,
-        };
+            const churnCount = cancelledThisMonth[0]?.count || 0;
+            const churnRate = (activeMembers + churnCount) > 0
+                ? (churnCount / (activeMembers + churnCount)) * 100
+                : 0;
+
+            return {
+                mrr,
+                activeMembers,
+                newThisMonth,
+                churnRate: Number(churnRate.toFixed(2)),
+                totalRevenue,
+            };
+        } catch (error: any) {
+            console.error("DEBUG_ANALYTICS_ERROR: getDashboardMetrics failed", error.message);
+            return { mrr: 0, activeMembers: 0, newThisMonth: 0, churnRate: 0, totalRevenue: 0 };
+        }
     }),
 
     getRevenueChart: protectedProcedure.query(async ({ ctx }) => {
+        if ((ctx as any).isDemoMode) {
+            return [
+                { date: "2024-03-15", revenue: 120000 },
+                { date: "2024-03-16", revenue: 245000 },
+                { date: "2024-03-17", revenue: 310000 },
+                { date: "2024-03-18", revenue: 450000 },
+                { date: "2024-03-19", revenue: 590000 },
+                { date: "2024-03-20", revenue: 720000 },
+            ];
+        }
         try {
             const creator = await ctx.db.query.creators.findFirst({
                 where: eq(creators.userId, ctx.user.id),

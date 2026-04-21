@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export default function DoctorPatientsPage() {
     const [search, setSearch] = useState("");
@@ -102,19 +103,19 @@ export default function DoctorPatientsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-black/[0.04]">
-                                {[1, 2, 3].map((i) => (
-                                    <tr key={i} className="group transition-all hover:bg-black/[0.01]">
+                                {filteredPatients.map((patient: any) => (
+                                    <tr key={patient.userId} className="group transition-all hover:bg-black/[0.01]">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-12 w-12 rounded-2xl bg-[#05050a] flex items-center justify-center text-[#b8ff00] font-black text-[12px] shadow-lg shadow-black/5 transition-transform group-hover:scale-110">
-                                                    P{i}
+                                                    {patient.fullName?.[0] || 'P'}
                                                 </div>
                                                 <div className="flex flex-col min-w-0">
-                                                    <span className="text-[15px] font-black text-[#05050a] truncate tracking-tight">Patient #{i + 240}</span>
+                                                    <span className="text-[15px] font-black text-[#05050a] truncate tracking-tight">{patient.fullName || 'Anonymous Patient'}</span>
                                                     <div className="flex items-center gap-2 text-[12px] font-medium text-[#8a8a8a]">
-                                                        <span>M, 34yr</span>
+                                                        <span>Patient</span>
                                                         <span className="h-1 w-1 rounded-full bg-[#d0d0d0]" />
-                                                        <span>Ref: #ID-4423</span>
+                                                        <span>ID: {patient.userId.slice(0, 8).toUpperCase()}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -134,14 +135,15 @@ export default function DoctorPatientsPage() {
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-2">
                                                  <Badge className="bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg px-2 py-1 text-[10px] uppercase font-black">Record OK</Badge>
-                                                 {i === 2 && <Badge className="bg-red-50 text-red-600 border border-red-100 rounded-lg px-2 py-1 text-[10px] uppercase font-black transition-all animate-pulse">Critical Lab</Badge>}
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-3">
-                                                <button className="flex items-center gap-2 px-4 h-10 bg-[#05050a] text-white rounded-xl text-[12px] font-black hover:scale-105 transition-all">
-                                                    PROFILE <ChevronRight className="h-4 w-4" />
-                                                </button>
+                                                <Link href={`/doctor/patients/${patient.userId}`}>
+                                                    <button className="flex items-center gap-2 px-4 h-10 bg-[#05050a] text-white rounded-xl text-[12px] font-black hover:scale-105 transition-all">
+                                                        PROFILE <ChevronRight className="h-4 w-4" />
+                                                    </button>
+                                                </Link>
                                                 <button className="p-2.5 rounded-xl text-[#d0d0d0] hover:text-[#05050a] hover:bg-black/5 transition-all">
                                                     <MoreHorizontal className="h-5 w-5" />
                                                 </button>

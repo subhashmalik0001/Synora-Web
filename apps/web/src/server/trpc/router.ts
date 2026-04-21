@@ -5,6 +5,7 @@ import { productsRouter } from "./routers/products";
 import { telegramRouter } from "./routers/telegram";
 import { settingsRouter } from "./routers/settings";
 import { medicalRouter } from "./routers/medical";
+import { authRouter } from "./routers/auth";
 
 export const appRouter = router({
     health: publicProcedure.query(() => {
@@ -18,6 +19,7 @@ export const appRouter = router({
     telegram: telegramRouter,
     settings: settingsRouter,
     medical: medicalRouter,
+    auth: authRouter,
 });
 
 

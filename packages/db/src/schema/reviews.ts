@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid, integer, boolean } from "drizzle-orm/pg-core";
 import { users } from "./users.js";
-import { appointments } from "./appointments.js";
+import { appointments } from './appointments.js';
 
 export const reviews = pgTable('reviews', {
   id: text('id').primaryKey(),

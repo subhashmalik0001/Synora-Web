@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey().defaultRandom(),
     name: text('name'), // Removed .notNull() for resilience during onboarding
     email: text('email').notNull().unique(),
     emailVerified: boolean('email_verified').notNull().default(false),
@@ -14,21 +14,21 @@ export const users = pgTable("users", {
 });
 
 export const sessions = pgTable("session", {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey().defaultRandom(),
     expiresAt: timestamp('expires_at').notNull(),
     token: text('token').notNull().unique(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
-    userId: text('user_id').notNull().references(() => users.id)
+    userId: uuid('user_id').notNull().references(() => users.id)
 });
 
 export const accounts = pgTable("account", {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey().defaultRandom(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
-    userId: text('user_id').notNull().references(() => users.id),
+    userId: uuid('user_id').notNull().references(() => users.id),
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
     idToken: text('id_token'),

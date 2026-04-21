@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid, boolean, time } from "drizzle-orm/pg-core";
 import { users } from "./users.js";
-import { prescriptions } from "./prescriptions.js";
+import { prescriptions } from './prescriptions.js';
 
 export const medicationReminders = pgTable('medication_reminders', {
   id: text('id').primaryKey(),

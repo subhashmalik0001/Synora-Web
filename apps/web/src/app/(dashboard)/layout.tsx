@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import AIChat from "@/components/dashboard/AIChat";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
@@ -52,14 +53,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [showNotifications, setShowNotifications] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
 
-    // Redirection logic
+    // Redirection logic removed as onboarding is disabled
     useEffect(() => {
-        if (!isLoading && !isError) {
-            if (!profile?.profile?.isOnboarded && pathname !== "/onboarding") {
-                router.push("/onboarding");
-            }
-        }
-    }, [isLoading, isError, profile, pathname, router]);
+        // Direct to correct portal is handled by middleware
+    }, [pathname]);
 
     // Cmd+K shortcut
     useEffect(() => {
@@ -101,6 +98,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             const { createClient } = await import("@/lib/supabase/browser");
                             const supabase = createClient();
                             await supabase.auth.signOut();
+                            // Clear demo mode cookie
+                            document.cookie = "synora_dummy_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                            // Clear local storage for a clean slate
+                            localStorage.clear();
                             window.location.href = "/";
                         }}
                         className="w-full rounded-2xl bg-[#05050a] py-4 text-[14px] font-black text-[#b8ff00] shadow-xl transition-all active:scale-95"
@@ -248,6 +249,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         const { createClient } = await import("@/lib/supabase/browser");
                                         const supabase = createClient();
                                         await supabase.auth.signOut();
+                                        // Clear demo mode cookie
+                                        document.cookie = "synora_dummy_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                                        // Clear local storage for a clean slate
+                                        localStorage.clear();
                                         window.location.href = "/";
                                     }}
                                 >
@@ -387,6 +392,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 )}
             </main>
+            {role === 'patient' && <AIChat />}
         </div>
     );
 }

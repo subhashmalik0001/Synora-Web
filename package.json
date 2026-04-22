@@ -4,10 +4,12 @@
   "private": true,
   "description": "Fluxar – Monetize your communities with paid access",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",

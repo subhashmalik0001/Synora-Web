@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import AIChat from "@/components/dashboard/AIChat";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 
 
@@ -95,7 +96,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex flex-col gap-3">
                     <button 
                         onClick={async () => {
-                            const { createClient } = await import("@/lib/supabase/browser");
                             const supabase = createClient();
                             await supabase.auth.signOut();
                             // Clear demo mode cookie
@@ -145,28 +145,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         collapsed ? "justify-center px-4" : "gap-3.5 px-7"
                     )}>
                         <div
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#05050a] shadow-xl shadow-black/10 transition-all duration-500 hover:rotate-[15deg] hover:scale-110 active:scale-95"
+                            className={cn(
+                                "flex shrink-0 items-center justify-center rounded-3xl transition-all duration-500",
+                                collapsed ? "h-20 w-20" : "h-32 w-32"
+                            )}
                         >
-                            <Zap className="h-5.5 w-5.5 text-[#b8ff00]" strokeWidth={2.5} />
+                            <img src="/logo.png" alt="Synora Logo" className="h-full w-full object-contain scale-125" />
                         </div>
-                        {!collapsed && (
-                            <div className="flex flex-col">
-                                <span className="text-[18px] font-black tracking-[-0.04em] text-[#05050a] leading-tight" style={{ fontFamily: "var(--font-display)" }}>
-                                    SYNORA
-                                </span>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="h-1 w-1 rounded-full bg-[#b8ff00] animate-pulse" />
-                                    <span className="text-[9px] font-black text-[#b0b0b0] uppercase tracking-[0.25em] leading-none">Clinical Suite</span>
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     {/* Nav links */}
                     <nav className="flex-1 space-y-1.5 px-4 py-8 overflow-y-auto scrollbar-hide">
                         {!collapsed && <p className="px-3 pb-4 text-[10px] font-black uppercase tracking-[0.3em] text-[#c0c0c0]">Infrastructure</p>}
                         {navigation.map((item) => {
-                            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                            const isActive = pathname === item.href || (!["/dashboard", "/patient", "/doctor"].includes(item.href) && pathname.startsWith(item.href));
                             return (
                                 <Link
                                     key={item.href}
@@ -246,7 +238,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <button
                                     className="ml-auto p-2 text-[#d0d0d0] hover:text-red-500 transition-all hover:rotate-12"
                                     onClick={async () => {
-                                        const { createClient } = await import("@/lib/supabase/browser");
                                         const supabase = createClient();
                                         await supabase.auth.signOut();
                                         // Clear demo mode cookie

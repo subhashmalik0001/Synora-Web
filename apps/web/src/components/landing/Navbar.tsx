@@ -17,11 +17,14 @@ export default function Navbar() {
 
     return (
         <>
-            <header className="fixed top-0 z-50 w-full border-b backdrop-blur-md" style={{ borderColor: "rgba(0,0,0,0.04)", background: "rgba(250,250,248,0.85)" }}>
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-                    <Link href="/" className="flex items-center gap-2 font-display text-xl font-black" style={{ color: "var(--ink)" }}>
-                        <span className="h-8 w-8 bg-[#05050a] rounded-lg flex items-center justify-center text-[#b8ff00] text-sm">S</span>
-                        SYNORA
+            <header className="fixed top-0 z-50 w-full backdrop-blur-md" style={{ background: "rgba(250,250,248,0.8)" }}>
+                <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 relative">
+                    <Link href="/" className="relative z-10" title="Synora Home">
+                        <div className="absolute top-[-10px] left-0">
+                            <img src="/logo.png" alt="Synora Logo" className="h-32 w-32 object-contain filter drop-shadow-2xl" />
+                        </div>
+                        {/* Placeholder to maintain space */}
+                        <div className="h-20 w-32" />
                     </Link>
 
 

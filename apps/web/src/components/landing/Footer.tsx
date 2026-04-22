@@ -4,8 +4,8 @@ export default function Footer() {
             <div className="mx-auto max-w-7xl px-6 pb-12">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
                     <div className="lg:col-span-6 space-y-8">
-                        <div className="font-display font-black text-2xl text-[#05050a]">
-                            SYNORA
+                        <div className="flex items-center gap-3">
+                            <img src="/logo.png" alt="Synora Logo" className="h-64 w-64 object-contain" />
                         </div>
                         <p className="font-body text-[15px] text-[#1a1a2e] max-w-sm leading-relaxed">
                             Restoring dignity, safety, and independence through AI-powered 

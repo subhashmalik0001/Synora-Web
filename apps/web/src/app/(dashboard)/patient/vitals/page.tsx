@@ -14,9 +14,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { EMGDashboardWidget } from "@/components/emg/EMGDashboardWidget";
 
 export default function VitalsPage() {
     const [period, setPeriod] = useState('1W');
+    
+    // Fetch profile for user ID
+    const { data: profile } = trpc.settings.getProfile.useQuery();
+    const patientId = profile?.user?.id || '';
     
     // Data placeholders
     const { data: chartData, isLoading } = trpc.analytics.getRevenueChart.useQuery() as any;
@@ -156,7 +161,9 @@ export default function VitalsPage() {
 
                 {/* Right Column: Logging & Recent Logs */}
                 <div className="xl:col-span-4 space-y-6">
-                    <h3 className="text-[20px] font-black tracking-tight text-[#05050a] px-2" style={{ fontFamily: "var(--font-display)" }}>Recent Logs</h3>
+                    <EMGDashboardWidget patientId={patientId} />
+                    
+                    <h3 className="text-[20px] font-black tracking-tight text-[#05050a] px-2 mt-8" style={{ fontFamily: "var(--font-display)" }}>Recent Logs</h3>
                     
                     <div className="premium-card rounded-[32px] overflow-hidden">
                         <div className="divide-y divide-black/[0.04]">

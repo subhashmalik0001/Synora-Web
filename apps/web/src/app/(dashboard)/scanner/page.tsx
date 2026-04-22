@@ -97,23 +97,10 @@ export default function ScannerPage() {
             if (uploadError) throw uploadError;
             setUploadProgress(60);
 
-            // 3. Generate a SIGNED READ URL (1hr expiry) — required for private buckets
-            //    The AI needs to fetch the file, so we must use a signed URL, not publicUrl.
-            const admin = supabase; // browser client is enough to create signed URL on own files
-            const { data: signedReadData, error: signedReadError } = await supabase.storage
-                .from('medical-records')
-                .createSignedUrl(path, 3600); // 1 hour
-
-            if (signedReadError || !signedReadData?.signedUrl) {
-                throw new Error('Could not generate secure access URL for AI analysis.');
-            }
-
-            setUploadProgress(80);
-
-            // 4. Send signed URL to AI processing pipeline
+            // 3. Send raw path to AI processing pipeline (Server will generate signed read URL)
             setStatus('analyzing');
             await processRecord.mutateAsync({
-                fileUrl: signedReadData.signedUrl,
+                fileUrl: path,
                 folderId: selectedFolderId || undefined,
             });
 

@@ -14,3 +14,5 @@ export { medicationReminders } from "./medication_reminders.js";
 export { reviews } from "./reviews.js";
 export { notifications } from "./notifications.js";
 export { healthSummaries } from "./health_summaries.js";
+export { doctorPatients } from "./doctor_patients.js";
+export { emgSessions, emgReadings } from "./emg.js";

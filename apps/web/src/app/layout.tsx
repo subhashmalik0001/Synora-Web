@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-    title: "Fluxar – Monetize Your Communities",
+    title: "Synora – AI-Powered Medical Intelligence",
     description:
-        "Accept UPI, cards & international payments. Automate member access for Telegram, Discord & WhatsApp. Built for Indian creators.",
-    keywords: ["fluxar", "paid telegram group", "membership management", "creator monetization", "india payments"],
+        "Clinical-grade remote patient monitoring, smart EHR systems, and AI-driven medical record analysis. Built for modern healthcare.",
+    keywords: ["synora", "medical ai", "remote patient monitoring", "smart ehr", "telemedicine india"],
+    icons: {
+        icon: "/logo.png",
+        apple: "/logo.png",
+    },
 };
 
 import { TRPCProvider } from "@/components/providers/trpc-provider";

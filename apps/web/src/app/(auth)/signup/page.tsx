@@ -27,7 +27,8 @@ export default function SignupPage() {
             if (signInError) {
                 handleDemoLogin();
             } else {
-                router.push("/dashboard");
+                const target = role === "doctor" ? "/doctor" : "/patient";
+                router.push(target);
                 router.refresh();
             }
         },
@@ -59,29 +60,25 @@ export default function SignupPage() {
     return (
         <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
             <div className="text-center space-y-3">
-                <div className="mx-auto h-14 w-14 rounded-[20px] bg-[#05050a] flex items-center justify-center shadow-2xl shadow-black/10">
-                    <ShieldCheck className="h-7 w-7 text-[#b8ff00]" />
-                </div>
-                <h1 className="text-[36px] font-black tracking-tighter text-[#05050a] leading-tight" style={{ fontFamily: "var(--font-display)" }}>
+                <h1 className="text-[42px] font-black tracking-tighter text-[#05050a] leading-tight" style={{ fontFamily: "var(--font-display)" }}>
                     Join Synora.
                 </h1>
                 <p className="text-[15px] font-medium text-[#8a8a8a] max-w-[320px] mx-auto leading-relaxed">
-                    The next generation of clinical management 
-                    and remote oversight.
+                    The next generation of clinical management and remote oversight.
                 </p>
             </div>
 
                 <form onSubmit={handleSignup} className="space-y-6 mt-10">
-                    <div className="grid grid-cols-2 gap-4 p-1.5 bg-black/[0.03] rounded-[24px]">
+                    <div className="grid grid-cols-2 gap-4 p-1.5 bg-black/[0.03] rounded-xl">
                         {["patient", "doctor"].map((r) => (
                             <button
                                 key={r}
                                 type="button"
                                 onClick={() => setRole(r as any)}
                                 className={cn(
-                                    "py-3 rounded-[18px] text-[11px] font-black uppercase tracking-widest transition-all",
+                                    "py-3 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
                                     role === r 
-                                        ? "bg-[#05050a] text-[#b8ff00] shadow-xl" 
+                                        ? "bg-[#05050a] text-[#b8ff00]" 
                                         : "text-[#8a8a8a] hover:text-[#05050a]"
                                 )}
                             >
@@ -97,7 +94,7 @@ export default function SignupPage() {
                             required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full rounded-2xl border border-black/[0.04] bg-black/[0.02] px-6 py-5 text-[14px] font-medium transition-all focus:border-[#b8ff00] focus:ring-0 outline-none"
+                            className="w-full rounded-lg border border-black/[0.08] bg-white px-6 py-5 text-[14px] font-medium transition-all focus:border-[#05050a] focus:ring-0 outline-none"
                             placeholder="Dr. John Doe"
                         />
                     </div>
@@ -109,7 +106,7 @@ export default function SignupPage() {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full rounded-2xl border border-black/[0.04] bg-black/[0.02] px-6 py-5 text-[14px] font-medium transition-all focus:border-[#b8ff00] focus:ring-0 outline-none"
+                            className="w-full rounded-lg border border-black/[0.08] bg-white px-6 py-5 text-[14px] font-medium transition-all focus:border-[#05050a] focus:ring-0 outline-none"
                             placeholder="name@clinic.com"
                         />
                     </div>
@@ -121,7 +118,7 @@ export default function SignupPage() {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full rounded-2xl border border-black/[0.04] bg-black/[0.02] px-6 py-5 text-[14px] font-medium transition-all focus:border-[#b8ff00] focus:ring-0 outline-none"
+                            className="w-full rounded-lg border border-black/[0.08] bg-white px-6 py-5 text-[14px] font-medium transition-all focus:border-[#05050a] focus:ring-0 outline-none"
                             placeholder="Min. 8 characters"
                         />
                     </div>
@@ -141,21 +138,13 @@ export default function SignupPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="h-[64px] flex items-center justify-center gap-2 rounded-2xl bg-[#05050a] text-[15px] font-black text-[#b8ff00] shadow-2xl shadow-black/10 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                            className="h-[64px] flex items-center justify-center gap-2 rounded-lg bg-[#05050a] text-[15px] font-black text-[#b8ff00] transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
                         >
-                            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <>JOIN <ArrowRight className="h-5 w-5" /></>}
-                        </button>
-                        
-                        <button
-                            type="button"
-                            onClick={handleDemoLogin}
-                            className="h-[64px] flex items-center justify-center gap-2 rounded-2xl border-2 border-[#05050a] text-[15px] font-black text-[#05050a] transition-all hover:bg-[#05050a] hover:text-white"
-                        >
-                            DEMO MODE
+                            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <>CREATE CLINICAL ACCOUNT <ArrowRight className="h-5 w-5" /></>}
                         </button>
                     </div>
                 </form>

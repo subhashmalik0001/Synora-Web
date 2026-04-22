@@ -230,6 +230,38 @@ export const medicalRouter = router({
             }
         }),
 
+    deleteFolder: protectedProcedure
+        .input(z.object({ folderId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const admin = createAdminClient();
+            
+            // Delete folder (RLS or Admin bypasses, but let's make sure we only delete if it belongs to user)
+            const { error } = await admin
+                .from('folders')
+                .delete()
+                .eq('id', input.folderId)
+                .eq('user_id', ctx.user.id);
+                
+            if (error) throw new Error(`Failed to delete folder: ${error.message}`);
+            return { success: true };
+        }),
+
+    deleteRecord: protectedProcedure
+        .input(z.object({ recordId: z.string(), type: z.enum(['prescription', 'lab_report']) }))
+        .mutation(async ({ ctx, input }) => {
+            const admin = createAdminClient();
+            const table = input.type === 'prescription' ? 'prescriptions' : 'lab_reports';
+            
+            const { error } = await admin
+                .from(table)
+                .delete()
+                .eq('id', input.recordId)
+                .eq('user_id', ctx.user.id);
+                
+            if (error) throw new Error(`Failed to delete record: ${error.message}`);
+            return { success: true };
+        }),
+
 
     // Doctor specific
     listPatients: protectedProcedure.query(async ({ ctx }) => {
@@ -352,8 +384,19 @@ export const medicalRouter = router({
                     role: 'patient'
                 });
 
-                // 1. Analyze with AI
-                const analysis = await analyzeMedicalImage(input.fileUrl);
+                // 1. Generate Signed URL for AI and DB
+                const { data: signedData, error: signedErr } = await admin.storage
+                    .from('medical-records')
+                    .createSignedUrl(input.fileUrl, 315360000); // 10 years
+                
+                if (signedErr || !signedData?.signedUrl) {
+                    throw new Error(`Failed to generate signed URL: ${signedErr?.message}`);
+                }
+
+                const analysis = await analyzeMedicalImage(signedData.signedUrl);
+
+                // Override input.fileUrl with the long-lived signed URL so it saves to the DB correctly
+                input.fileUrl = signedData.signedUrl;
 
                 const parseDate = (dateStr: string | undefined) => {
                     const now = new Date();
@@ -450,11 +493,14 @@ export const medicalRouter = router({
         }))
         .mutation(async ({ input }) => {
             try {
+                const PRIMARY_KEY = "AIzaSyBwTdJXJ7ZlQFlxRpSPWrt_g_k-5F_RSS0";
+                const FALLBACK_KEY = "AIzaSyBmmBYWb4yiLmZzL4pF3lYALqqTQUO1Ink";
                 const model = (await import("@google/generative-ai")).GoogleGenerativeAI;
-                const genAI = new model(process.env.GEMINI_API_KEY || "");
-                const generativeModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
                 
-                const chat = generativeModel.startChat({
+                let genAI = new model(PRIMARY_KEY);
+                let generativeModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+                
+                let chat = generativeModel.startChat({
                     history: input.messages.slice(0, -1).map(m => ({
                         role: m.role === 'user' ? 'user' : 'model',
                         parts: [{ text: m.content }],
@@ -462,7 +508,23 @@ export const medicalRouter = router({
                 });
 
                 const lastMessage = input.messages[input.messages.length - 1].content;
-                const result = await chat.sendMessage(lastMessage);
+                
+                let result;
+                try {
+                    result = await chat.sendMessage(lastMessage);
+                } catch (error: any) {
+                    console.warn("Chat Primary Key failed, trying fallback...", error.message);
+                    genAI = new model(FALLBACK_KEY);
+                    generativeModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+                    chat = generativeModel.startChat({
+                        history: input.messages.slice(0, -1).map(m => ({
+                            role: m.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: m.content }],
+                        })),
+                    });
+                    result = await chat.sendMessage(lastMessage);
+                }
+
                 const response = await result.response;
                 
                 return {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
     Plus, FolderIcon, FileText, Search, MoreVertical,
     Download, ExternalLink, Filter, Grid, List as ListIcon,
-    FolderPlus, Upload, Shield, Sparkles, Loader2, ArrowRight
+    FolderPlus, Upload, Shield, Sparkles, Loader2, ArrowRight, Trash2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
@@ -39,6 +39,34 @@ export default function MedicalRecordsPage() {
     const handleCreateFolder = () => {
         const name = prompt("Enter folder name:");
         if (name?.trim()) createFolder.mutate({ name: name.trim() });
+    };
+
+    const deleteFolder = trpc.medical.deleteFolder.useMutation({
+        onSuccess: () => {
+            utils.medical.listFolders.invalidate();
+            setSelectedFolderId(null);
+        }
+    });
+
+    const deleteRecord = trpc.medical.deleteRecord.useMutation({
+        onSuccess: () => {
+            utils.medical.listRecords.invalidate();
+            setSelectedRecord(null);
+        }
+    });
+
+    const handleDeleteFolder = (e: React.MouseEvent, folderId: string) => {
+        e.stopPropagation();
+        if (confirm("Are you sure you want to delete this folder? All records inside will be kept but unassigned.")) {
+            deleteFolder.mutate({ folderId });
+        }
+    };
+
+    const handleDeleteRecord = () => {
+        if (!selectedRecord) return;
+        if (confirm("Are you sure you want to delete this record permanently?")) {
+            deleteRecord.mutate({ recordId: selectedRecord.id, type: selectedRecord.type });
+        }
     };
 
     // Filter by search query
@@ -154,12 +182,20 @@ export default function MedicalRecordsPage() {
                                 </div>
                             )}
 
-                            {/* Download */}
-                            <a href={selectedRecord.fileUrl} download target="_blank" rel="noopener noreferrer">
-                                <button className="w-full h-14 bg-[#05050a] text-[#b8ff00] rounded-2xl font-black text-[13px] transition-all hover:scale-[1.02] flex items-center justify-center gap-2">
-                                    <Download className="h-5 w-5" /> DOWNLOAD ORIGINAL
+                            {/* Actions */}
+                            <div className="flex gap-3">
+                                <a href={selectedRecord.fileUrl} download target="_blank" rel="noopener noreferrer" className="flex-1">
+                                    <button className="w-full h-14 bg-[#05050a] text-[#b8ff00] rounded-2xl font-black text-[13px] transition-all hover:scale-[1.02] flex items-center justify-center gap-2">
+                                        <Download className="h-5 w-5" /> DOWNLOAD ORIGINAL
+                                    </button>
+                                </a>
+                                <button 
+                                    onClick={handleDeleteRecord}
+                                    disabled={deleteRecord.isPending}
+                                    className="h-14 w-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center transition-all hover:bg-red-100 hover:scale-[1.02]">
+                                    {deleteRecord.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
                                 </button>
-                            </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -231,10 +267,16 @@ export default function MedicalRecordsPage() {
                             {folders.map((folder) => (
                                 <button key={folder.id} onClick={() => setSelectedFolderId(folder.id)}
                                     className="group flex flex-col p-6 bg-white rounded-[24px] border border-black/5 hover:border-[#b8ff00] hover:shadow-lg transition-all text-left relative overflow-hidden">
-                                    <FolderIcon className="h-9 w-9 text-[#05050a] mb-3 group-hover:scale-110 transition-transform" />
+                                    <div className="flex justify-between items-start mb-3">
+                                        <FolderIcon className="h-9 w-9 text-[#05050a] group-hover:scale-110 transition-transform" />
+                                        <button 
+                                            onClick={(e) => handleDeleteFolder(e, folder.id)}
+                                            className="p-1.5 text-[#d0d0d0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                     <span className="text-[13px] font-black text-[#05050a] truncate w-full">{folder.name}</span>
                                     <span className="text-[10px] font-medium text-[#b0b0b0] mt-0.5">Open folder</span>
-                                    <ArrowRight className="absolute top-4 right-4 h-4 w-4 text-[#b8ff00] opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </button>
                             ))}
                         </div>
@@ -323,10 +365,18 @@ export default function MedicalRecordsPage() {
                                         VIEW <ExternalLink className="h-3.5 w-3.5" />
                                     </button>
                                     <a href={record.fileUrl} download target="_blank" rel="noopener noreferrer">
-                                        <button className="h-11 w-11 rounded-xl border-2 border-black/5 flex items-center justify-center hover:bg-black/5 transition-all">
+                                        <button className="h-11 w-11 rounded-xl border-2 border-black/5 flex items-center justify-center hover:bg-black/5 transition-all text-[#05050a]">
                                             <Download className="h-4 w-4" />
                                         </button>
                                     </a>
+                                    <button onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        if (confirm("Are you sure you want to delete this record?")) deleteRecord.mutate({ recordId: record.id, type: record.type }); 
+                                    }}
+                                        disabled={deleteRecord.isPending}
+                                        className="h-11 w-11 rounded-xl border-2 border-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-50 hover:border-red-500/30 transition-all">
+                                        {deleteRecord.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                    </button>
                                 </div>
                             </div>
                         ))}

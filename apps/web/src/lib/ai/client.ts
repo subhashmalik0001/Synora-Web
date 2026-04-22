@@ -40,7 +40,7 @@ export interface AIAnalysisResult {
     confidence: number;
 }
 
-const SYSTEM_PROMPT = `You are a medical document parser. Analyze this medical document image or PDF and extract structured data.
+const SYSTEM_PROMPT = `You are an expert medical document parser. Carefully analyze this medical document image or PDF and extract structured data. You MUST try your absolute best to read and transcribe handwritten text, especially medication names, dosages, and medical shorthand (e.g., Rx, bd, od, tid).
 
 If it is a PRESCRIPTION, return JSON:
 {
@@ -50,7 +50,13 @@ If it is a PRESCRIPTION, return JSON:
   "date": "",
   "diagnosis": "",
   "medicines": [
-    { "name": "", "dosage": "", "frequency": "", "duration": "", "instructions": "" }
+    { 
+      "name": "Exact medicine name (transcribe handwriting carefully)", 
+      "dosage": "e.g., 500mg, 10ml", 
+      "frequency": "e.g., 1-0-1, twice a day (decode shorthand like bd/tid)", 
+      "duration": "e.g., 5 days", 
+      "instructions": "e.g., after meals (decode shorthand like p.c./a.c.)" 
+    }
   ],
   "specialization": "",
   "ai_confidence": 0.0
@@ -72,16 +78,17 @@ If it is a LAB REPORT, return JSON:
 
 Return ONLY valid JSON. No markdown, no explanation.`;
 
-export async function analyzeMedicalImage(imageUrl: string): Promise<AIAnalysisResult> {
-    // Dynamic instantiation ensures hot-reloading of API key
-    const genAI = new (await import("@google/generative-ai")).GoogleGenerativeAI(
-        process.env.GEMINI_API_KEY || ""
-    );
+const PRIMARY_KEY = "AIzaSyBwTdJXJ7ZlQFlxRpSPWrt_g_k-5F_RSS0";
+const FALLBACK_KEY = "AIzaSyBmmBYWb4yiLmZzL4pF3lYALqqTQUO1Ink";
 
-    try {
+export async function analyzeMedicalImage(imageUrl: string): Promise<AIAnalysisResult> {
+    const GoogleGenerativeAI = (await import("@google/generative-ai")).GoogleGenerativeAI;
+    
+    // Helper to attempt generation with a specific key
+    const tryGenerate = async (apiKey: string) => {
+        const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        // Fetch image and convert to base64 inline data
         const imageResp = await fetch(imageUrl);
         if (!imageResp.ok) throw new Error(`Failed to fetch image: ${imageResp.status}`);
         const imageBuffer = await imageResp.arrayBuffer();
@@ -90,16 +97,28 @@ export async function analyzeMedicalImage(imageUrl: string): Promise<AIAnalysisR
 
         const result = await model.generateContent([
             SYSTEM_PROMPT,
-            {
-                inlineData: {
-                    data: base64Image,
-                    mimeType
-                }
-            }
+            { inlineData: { data: base64Image, mimeType } }
         ]);
 
-        const text = result.response.text();
-        
+        return result.response.text();
+    };
+
+    let text = "";
+    try {
+        // Try Primary Key first
+        text = await tryGenerate(PRIMARY_KEY);
+    } catch (error: any) {
+        console.warn("Primary Gemini Key failed, attempting fallback...", error.message);
+        try {
+            // Try Fallback Key
+            text = await tryGenerate(FALLBACK_KEY);
+        } catch (fallbackError: any) {
+            console.error("Fallback Gemini Key also failed.", fallbackError.message);
+            throw fallbackError;
+        }
+    }
+
+    try {
         // Safely strip any markdown fences before parsing
         const cleanJson = text
             .replace(/```json\s*/gi, '')

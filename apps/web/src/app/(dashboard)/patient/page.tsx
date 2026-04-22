@@ -12,6 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
+import { EMGDashboardWidget } from "@/components/emg/EMGDashboardWidget";
 
 export default function PatientDashboard() {
     const supabase = createClient();
@@ -201,6 +202,8 @@ export default function PatientDashboard() {
 
                 {/* Vitals Sidebar */}
                 <div className="xl:col-span-4 flex flex-col gap-6">
+                    <EMGDashboardWidget patientId={userId || undefined} />
+
                     <div className="premium-card rounded-[32px] p-8 flex flex-col justify-between flex-1 relative overflow-hidden group border-l-[6px] border-l-red-500">
                         <Heart className="absolute -right-6 -bottom-6 h-32 w-32 text-red-500/5 transition-transform group-hover:scale-110" />
                         <div className="space-y-1">
